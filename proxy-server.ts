@@ -1,18 +1,18 @@
 import express, { type Request, type Response } from 'express'
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
 
-// ===================== 配置区（仅修改这里）=====================
 const CONFIG = {
-  localPort: 1050,
-  targetBaseUrl: 'https://你的-coding-plan-接口地址.com',
+  localPort: parseInt(process.env.LOCAL_PORT || '1050', 10),
+  targetBaseUrl: process.env.TARGET_BASE_URL || 'https://你的-coding-plan-接口地址.com',
   retry: {
-    maxRetries: 5,
-    delayMs: 2000,
-    retryStatusCodes: [429, 500, 502, 503, 504],
+    maxRetries: parseInt(process.env.MAX_RETRIES || '5', 10),
+    delayMs: parseInt(process.env.DELAY_MS || '2000', 10),
+    retryStatusCodes: (process.env.RETRY_STATUS_CODES || '429,500,502,503,504')
+      .split(',')
+      .map(code => parseInt(code.trim(), 10)),
   },
 }
 
-// 类型定义
 type RetryConfig = typeof CONFIG.retry
 
 const app = express()

@@ -5,8 +5,8 @@
   "main": "proxy-server.ts",
   "type": "module",
   "scripts": {
-    "start": "node proxy-server.ts",
-    "dev": "node --watch proxy-server.ts",
+    "start": "node --env-file=.env proxy-server.ts",
+    "dev": "node --env-file=.env --watch proxy-server.ts",
     "lint": "prettier --write . && eslint . --fix && tsc --noEmit"
   },
   "repository": {
