@@ -2,11 +2,11 @@
   "name": "retry-model-request",
   "version": "1.0.0",
   "description": "对 coding plan、token plan 的反向代理，在供应商接口报错时自动重试，避免客户端由于报错而中断执行任务。",
-  "main": "proxy-server.ts",
+  "main": "src/main.ts",
   "type": "module",
   "scripts": {
-    "start": "node --env-file=.env proxy-server.ts",
-    "dev": "node --env-file=.env --watch proxy-server.ts",
+    "start": "node --env-file=.env src/main.ts",
+    "dev": "node --env-file=.env --watch src/main.ts",
     "lint": "prettier --write . && eslint . --fix && tsc --noEmit"
   },
   "repository": {

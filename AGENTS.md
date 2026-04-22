@@ -3,7 +3,7 @@
 ## Scope
 
 - 本仓库默认语言: TypeScript
-- 允许修改目录: 根目录下的所有 `.ts` 文件、配置文件
+- 允许修改目录: `src/` 目录下的所有 `.ts` 文件、配置文件
 - 禁止修改目录: 无
 
 ## Quality Gate
@@ -20,7 +20,8 @@
 
 ```
 retry-model-request/
-├── proxy-server.ts      # 主程序 - 反向代理服务器，支持自动重试
+├── src/
+│   └── main.ts           # 主程序 - 反向代理服务器，支持自动重试
 ├── package.json         # 项目配置
 ├── tsconfig.json        # TypeScript 配置
 ├── .nvmrc               # Node.js 版本锁定 (v22.18.0)
@@ -33,7 +34,7 @@ retry-model-request/
 
 - 项目使用 Node.js v22.18.0
 - **重要**: Node.js 22.x 原生支持执行 TypeScript 文件（通过 `--experimental-strip-types` 或默认支持），无需安装 ts-node 等第三方运行时
-- 启动命令: `npm start` 或 `node proxy-server.ts`
+- 启动命令: `npm start` 或 `node src/main.ts`
 
 ### 项目功能
 
