@@ -9,7 +9,7 @@
 ## Quality Gate
 
 - 改动后必须执行:
-  - `npx tsc --noEmit` (类型检查)
+  - `npm run lint` (代码格式化、静态检查、类型检查)
 
 ## Delivery Format
 
