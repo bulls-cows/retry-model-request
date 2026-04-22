@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node proxy-server.ts",
+    "dev": "node --watch proxy-server.ts",
     "lint": "prettier --write . && eslint . --fix && tsc --noEmit"
   },
   "repository": {
