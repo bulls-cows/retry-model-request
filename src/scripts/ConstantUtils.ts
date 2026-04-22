@@ -19,3 +19,15 @@ export const CONFIG: Config = {
     retryStatusCodes: RETRY_STATUS_CODES,
   },
 }
+
+export const logInfo = (message: string): void => {
+  console.log(message)
+}
+
+export const logWarn = (message: string): void => {
+  console.log(`⚠️ ${message}`)
+}
+
+export const logError = (message: string): void => {
+  console.log(`❌ ${message}`)
+}
