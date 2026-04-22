@@ -43,7 +43,7 @@ app.all('*', async (req: Request, res: Response) => {
   while (attempt <= CONFIG.retry.maxRetries) {
     try {
       const requestConfig: AxiosRequestConfig = {
-        method: req.method as any,
+        method: req.method as AxiosRequestConfig['method'],
         url: targetUrl,
         data: req.body,
         headers: {
@@ -59,15 +59,16 @@ app.all('*', async (req: Request, res: Response) => {
       // 请求成功
       console.log(`✅ 请求成功 | 第${attempt + 1}次 | ${targetUrl}`)
       return res.status(response.status).send(response.data)
-    } catch (err: any) {
+    } catch (err: unknown) {
       attempt++
-      const status = err.response?.status
-      const errorCode = err.code
+      const axiosError = err as { response?: { status?: number; data?: unknown }; code?: string }
+      const status = axiosError.response?.status
+      const errorCode = axiosError.code
 
       // 不满足重试条件
       if (!shouldRetry(status, errorCode, CONFIG.retry) || attempt > CONFIG.retry.maxRetries) {
         console.log(`❌ 失败终止 | 状态: ${status || errorCode} | ${targetUrl}`)
-        return res.status(status || 500).send(err.response?.data || '服务请求失败')
+        return res.status(status || 500).send(axiosError.response?.data || '服务请求失败')
       }
 
       // 执行重试

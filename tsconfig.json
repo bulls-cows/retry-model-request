@@ -4,11 +4,11 @@
     "moduleResolution": "Bundler",
     "target": "ESNext",
     "strict": true,
-    "esModuleInterop": false,
+    "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "*.mjs"]
 }
