@@ -1,6 +1,7 @@
 import express, { type Request, type Response } from 'express'
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
-import { CONFIG, logInfo, logWarn, logError } from '#scripts/ConstantUtils.ts'
+import { CONFIG } from '#scripts/ConstantUtils.ts'
+import { logInfo, logWarn, logError } from '#scripts/LogUtils.ts'
 
 const app = express()
 app.use(express.json())
