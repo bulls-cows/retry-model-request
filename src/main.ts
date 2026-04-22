@@ -1,6 +1,6 @@
 import express, { type Request, type Response } from 'express'
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
-import { CONFIG } from './scripts/ConstantUtils.js'
+import { CONFIG } from '#scripts/ConstantUtils.ts'
 
 const app = express()
 app.use(express.json())
