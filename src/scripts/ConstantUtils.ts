@@ -1,4 +1,13 @@
-import { join } from 'node:path'
+import { getDirname, joinPath } from 'nsuite'
+import { readFileSync } from 'fs'
+
+const __dirname = getDirname(import.meta.url)
+export const PATH_ROOT = joinPath(__dirname, '../../')
+
+// 从 package.json 同步读取应用名称
+const packageJsonPath = joinPath(PATH_ROOT, 'package.json')
+const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'))
+export const APP_NAME: string = packageJson.name
 
 // 服务配置
 export const LOCAL_PORT: number = parseInt(process.env.LOCAL_PORT!, 10)
@@ -18,9 +27,7 @@ export const NODE_ENV: string = process.env.NODE_ENV || 'development'
 
 export const DEBUG: string = process.env.DEBUG || '0'
 
-export const SITE_TITLE: string = process.env.SITE_TITLE || 'Retry Model Request'
-
-export const PATH_LOGS: string = join(process.cwd(), 'logs')
+export const PATH_LOGS = joinPath(PATH_ROOT, 'logs')
 
 export const CONFIG: Config = {
   localPort: LOCAL_PORT,
