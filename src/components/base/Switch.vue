@@ -1,6 +1,9 @@
 <template>
   <label class="switch-wrapper">
-    <span v-if="label" class="switch-label">{{ label }}</span>
+    <span
+      v-if="label"
+      class="switch-label"
+    >{{ label }}</span>
     <button
       type="button"
       role="switch"

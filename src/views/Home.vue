@@ -1,8 +1,12 @@
 <template>
   <div class="home-page">
     <div class="page-header">
-      <h2 class="page-title">仪表盘</h2>
-      <p class="page-desc">配置代理服务并启动</p>
+      <h2 class="page-title">
+        仪表盘
+      </h2>
+      <p class="page-desc">
+        配置代理服务并启动
+      </p>
     </div>
 
     <!-- Status Card -->
@@ -16,7 +20,10 @@
             <span class="status-icon" />
             {{ proxyStore.status === 'running' ? '运行中' : '已停止' }}
           </div>
-          <div v-if="proxyStore.status === 'running'" class="status-info">
+          <div
+            v-if="proxyStore.status === 'running'"
+            class="status-info"
+          >
             <span class="status-label">监听端口:</span>
             <span class="status-value">{{ proxyStore.port }}</span>
           </div>
@@ -30,7 +37,14 @@
           >
             启动服务
           </Button>
-          <Button v-else type="danger" size="large" @click="handleStop"> 停止服务 </Button>
+          <Button
+            v-else
+            type="danger"
+            size="large"
+            @click="handleStop"
+          >
+            停止服务
+          </Button>
         </div>
       </div>
     </Card>
@@ -47,17 +61,29 @@
           :options="profileOptions"
           @update:model-value="handleProfileChange"
         />
-        <Button type="default" @click="showCreateModal = true"> 新建方案 </Button>
+        <Button
+          type="default"
+          @click="showCreateModal = true"
+        >
+          新建方案
+        </Button>
       </div>
     </Card>
 
     <!-- Configuration Form -->
-    <Card v-if="activeProfile" class="config-card">
+    <Card
+      v-if="activeProfile"
+      class="config-card"
+    >
       <template #header>
         <span>配置详情</span>
       </template>
       <div class="config-form">
-        <Input v-model="activeProfile.name" label="方案名称" placeholder="输入方案名称" />
+        <Input
+          v-model="activeProfile.name"
+          label="方案名称"
+          placeholder="输入方案名称"
+        />
         <Input
           v-model.number="activeProfile.local_port"
           label="本地端口"
@@ -89,8 +115,18 @@
           placeholder="429,500,502,503,504"
         />
         <div class="form-actions">
-          <Button type="primary" @click="handleSaveConfig"> 保存配置 </Button>
-          <Button type="danger" @click="handleDeleteProfile"> 删除方案 </Button>
+          <Button
+            type="primary"
+            @click="handleSaveConfig"
+          >
+            保存配置
+          </Button>
+          <Button
+            type="danger"
+            @click="handleDeleteProfile"
+          >
+            删除方案
+          </Button>
         </div>
       </div>
     </Card>
@@ -124,13 +160,33 @@
     </div>
 
     <!-- Create Profile Modal -->
-    <div v-if="showCreateModal" class="modal-overlay" @click.self="showCreateModal = false">
+    <div
+      v-if="showCreateModal"
+      class="modal-overlay"
+      @click.self="showCreateModal = false"
+    >
       <div class="modal">
-        <h3 class="modal-title">新建配置方案</h3>
-        <Input v-model="newProfileName" label="方案名称" placeholder="输入方案名称" />
+        <h3 class="modal-title">
+          新建配置方案
+        </h3>
+        <Input
+          v-model="newProfileName"
+          label="方案名称"
+          placeholder="输入方案名称"
+        />
         <div class="modal-actions">
-          <Button type="default" @click="showCreateModal = false"> 取消 </Button>
-          <Button type="primary" @click="handleCreateProfile"> 创建 </Button>
+          <Button
+            type="default"
+            @click="showCreateModal = false"
+          >
+            取消
+          </Button>
+          <Button
+            type="primary"
+            @click="handleCreateProfile"
+          >
+            创建
+          </Button>
         </div>
       </div>
     </div>
