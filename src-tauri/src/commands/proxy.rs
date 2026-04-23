@@ -4,25 +4,20 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter, State};
 
 use crate::config::ConfigManager;
-use crate::proxy::{LogEntry, ProxyServer};
+use crate::proxy::ProxyServer;
 use crate::stats::StatsSnapshot;
 
 /// Global proxy server state
+#[derive(Default)]
 pub struct ProxyState {
-    server: Option<ProxyServer>,
-}
-
-impl Default for ProxyState {
-    fn default() -> Self {
-        Self { server: None }
-    }
+    pub server: Option<ProxyServer>,
 }
 
 /// Start the proxy server
 #[tauri::command]
 pub async fn start_proxy(
     app: AppHandle,
-    config_manager: State<ConfigManager>,
+    config_manager: State<'_, ConfigManager>,
     proxy_state: State<'_, Arc<std::sync::Mutex<ProxyState>>>,
 ) -> Result<u16, String> {
     let profile = config_manager
@@ -33,11 +28,12 @@ pub async fn start_proxy(
         return Err("Target URL is not configured".to_string());
     }
 
-    let mut state = proxy_state.lock().unwrap();
-
     // Stop existing server if running
-    if let Some(mut server) = state.server.take() {
-        server.stop();
+    {
+        let mut state = proxy_state.lock().unwrap();
+        if let Some(mut server) = state.server.take() {
+            server.stop();
+        }
     }
 
     // Create and start new server
@@ -64,7 +60,11 @@ pub async fn start_proxy(
         }
     });
 
-    state.server = Some(server);
+    // Store server in state
+    {
+        let mut state = proxy_state.lock().unwrap();
+        state.server = Some(server);
+    }
 
     // Emit status event
     app.emit("proxy-status", "running").ok();
@@ -96,9 +96,9 @@ pub fn get_proxy_status(
 ) -> Result<String, String> {
     let state = proxy_state.lock().unwrap();
     Ok(if state.server.is_some() {
-        "running"
+        "running".to_string()
     } else {
-        "stopped"
+        "stopped".to_string()
     })
 }
 

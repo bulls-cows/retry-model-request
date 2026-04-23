@@ -3,4 +3,4 @@
 mod handler;
 mod server;
 
-pub use server::ProxyServer;
+pub use server::{LogEntry, ProxyServer};

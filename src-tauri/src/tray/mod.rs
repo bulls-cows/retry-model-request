@@ -1,9 +1,8 @@
 //! System tray implementation
 
 use tauri::{
-    image::Image,
     menu::{Menu, MenuItem},
-    tray::{TrayIcon, TrayIconBuilder},
+    tray::TrayIconBuilder,
     App, Manager,
 };
 
@@ -19,9 +18,9 @@ pub fn setup_tray(app: &App) -> anyhow::Result<()> {
 
     // Build tray icon
     let _tray = TrayIconBuilder::new()
-        .icon(Image::from_bytes(include_bytes!("../../icons/icon.png"))?)
+        .icon(app.default_window_icon().unwrap().clone())
         .menu(&menu)
-        .menu_on_left_click(true)
+        .show_menu_on_left_click(true)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "show" => {
                 if let Some(window) = app.get_webview_window("main") {

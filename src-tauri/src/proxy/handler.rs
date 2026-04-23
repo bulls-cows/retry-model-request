@@ -3,7 +3,7 @@
 use axum::{
     body::Body,
     extract::{Request, State},
-    http::{HeaderMap, HeaderValue, Method, StatusCode, Uri},
+    http::{Method, StatusCode},
     response::{IntoResponse, Response},
 };
 use reqwest::Client;
@@ -63,15 +63,6 @@ fn is_streaming_request(request: &Request) -> bool {
         }
     }
 
-    // Check body for stream field
-    if let Ok(body_bytes) = axum::body::to_bytes(request.body(), 1024) {
-        if let Ok(body_str) = std::str::from_utf8(&body_bytes) {
-            if body_str.contains("\"stream\":true") {
-                return true;
-            }
-        }
-    }
-
     false
 }
 
@@ -82,9 +73,8 @@ async fn handle_regular_request(
     request: Request,
     target_url: String,
 ) -> Response {
-    let method = request.method().clone();
     let (parts, body) = request.into_parts();
-    let body_bytes = match axum::body::to_bytes(&body, 100 * 1024 * 1024).await {
+    let body_bytes = match axum::body::to_bytes(body, 100 * 1024 * 1024).await {
         Ok(b) => b,
         Err(e) => {
             return (
@@ -215,7 +205,7 @@ async fn handle_streaming_request(
     target_url: String,
 ) -> Response {
     let (parts, body) = request.into_parts();
-    let body_bytes = match axum::body::to_bytes(&body, 100 * 1024 * 1024).await {
+    let body_bytes = match axum::body::to_bytes(body, 100 * 1024 * 1024).await {
         Ok(b) => b,
         Err(e) => {
             return (
@@ -250,7 +240,7 @@ async fn handle_streaming_request(
     match req_builder.send().await {
         Ok(response) => {
             let status = response.status();
-            let mut response_builder = Response::builder()
+            let response_builder = Response::builder()
                 .status(status)
                 .header("content-type", "text/event-stream")
                 .header("cache-control", "no-cache")
@@ -259,7 +249,7 @@ async fn handle_streaming_request(
             // Create streaming body
             let stream = response.bytes_stream().map(|result| match result {
                 Ok(bytes) => Ok(bytes),
-                Err(e) => Err(std::io::Error::new(std::io::ErrorKind::Other, e)),
+                Err(e) => Err(std::io::Error::other(e)),
             });
 
             state.stats.record_success();
