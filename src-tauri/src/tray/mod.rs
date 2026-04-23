@@ -22,24 +22,22 @@ pub fn setup_tray(app: &App) -> anyhow::Result<()> {
         .icon(Image::from_bytes(include_bytes!("../icons/icon.png"))?)
         .menu(&menu)
         .menu_on_left_click(true)
-        .on_menu_event(|app, event| {
-            match event.id.as_ref() {
-                "show" => {
-                    if let Some(window) = app.get_webview_window("main") {
-                        window.show().ok();
-                        window.set_focus().ok();
-                    }
+        .on_menu_event(|app, event| match event.id.as_ref() {
+            "show" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    window.show().ok();
+                    window.set_focus().ok();
                 }
-                "hide" => {
-                    if let Some(window) = app.get_webview_window("main") {
-                        window.hide().ok();
-                    }
-                }
-                "quit" => {
-                    app.exit(0);
-                }
-                _ => {}
             }
+            "hide" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    window.hide().ok();
+                }
+            }
+            "quit" => {
+                app.exit(0);
+            }
+            _ => {}
         })
         .build(app)?;
 

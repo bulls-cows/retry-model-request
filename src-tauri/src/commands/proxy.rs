@@ -95,7 +95,11 @@ pub fn get_proxy_status(
     proxy_state: State<'_, Arc<std::sync::Mutex<ProxyState>>>,
 ) -> Result<String, String> {
     let state = proxy_state.lock().unwrap();
-    Ok(if state.server.is_some() { "running" } else { "stopped" })
+    Ok(if state.server.is_some() {
+        "running"
+    } else {
+        "stopped"
+    })
 }
 
 /// Get current statistics

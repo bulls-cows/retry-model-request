@@ -1,6 +1,6 @@
 //! Proxy server module
 
-mod server;
 mod handler;
+mod server;
 
 pub use server::ProxyServer;

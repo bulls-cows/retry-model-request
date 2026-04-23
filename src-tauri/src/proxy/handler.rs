@@ -87,7 +87,10 @@ async fn handle_regular_request(
     let body_bytes = match axum::body::to_bytes(&body, 100 * 1024 * 1024).await {
         Ok(b) => b,
         Err(e) => {
-            return (StatusCode::BAD_REQUEST, format!("Failed to read body: {}", e))
+            return (
+                StatusCode::BAD_REQUEST,
+                format!("Failed to read body: {}", e),
+            )
                 .into_response();
         }
     };
@@ -122,10 +125,7 @@ async fn handle_regular_request(
         match req_builder.send().await {
             Ok(response) => {
                 let status = response.status();
-                let should_retry = state
-                    .profile
-                    .retry_status_codes
-                    .contains(&status.as_u16());
+                let should_retry = state.profile.retry_status_codes.contains(&status.as_u16());
 
                 if should_retry && attempt < max_retries {
                     attempt += 1;
@@ -182,10 +182,7 @@ async fn handle_regular_request(
                     let _ = state.log_sender.send(LogEntry {
                         timestamp: chrono::Local::now().to_rfc3339(),
                         level: "WARN".to_string(),
-                        message: format!(
-                            "Retry {}/{}: {}",
-                            attempt, max_retries, e
-                        ),
+                        message: format!("Retry {}/{}: {}", attempt, max_retries, e),
                         details: None,
                     });
 
@@ -204,11 +201,7 @@ async fn handle_regular_request(
 
                 state.stats.record_failure();
 
-                return (
-                    StatusCode::BAD_GATEWAY,
-                    format!("Proxy error: {}", e),
-                )
-                    .into_response();
+                return (StatusCode::BAD_GATEWAY, format!("Proxy error: {}", e)).into_response();
             }
         }
     }
@@ -225,7 +218,10 @@ async fn handle_streaming_request(
     let body_bytes = match axum::body::to_bytes(&body, 100 * 1024 * 1024).await {
         Ok(b) => b,
         Err(e) => {
-            return (StatusCode::BAD_REQUEST, format!("Failed to read body: {}", e))
+            return (
+                StatusCode::BAD_REQUEST,
+                format!("Failed to read body: {}", e),
+            )
                 .into_response();
         }
     };
@@ -283,11 +279,7 @@ async fn handle_streaming_request(
 
             state.stats.record_failure();
 
-            (
-                StatusCode::BAD_GATEWAY,
-                format!("Proxy error: {}", e),
-            )
-                .into_response()
+            (StatusCode::BAD_GATEWAY, format!("Proxy error: {}", e)).into_response()
         }
     }
 }

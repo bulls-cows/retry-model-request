@@ -1,7 +1,7 @@
 //! Configuration management module
 
-mod schema;
 mod manager;
+mod schema;
 
-pub use schema::*;
 pub use manager::ConfigManager;
+pub use schema::*;

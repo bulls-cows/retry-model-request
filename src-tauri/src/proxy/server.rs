@@ -85,10 +85,7 @@ impl ProxyServer {
         let _ = state.log_sender.send(LogEntry {
             timestamp: chrono::Local::now().to_rfc3339(),
             level: "INFO".to_string(),
-            message: format!(
-                "Proxy server started on port {}",
-                state.profile.local_port
-            ),
+            message: format!("Proxy server started on port {}", state.profile.local_port),
             details: Some(serde_json::json!({
                 "target": state.profile.target_base_url,
                 "max_retries": state.profile.max_retries,
