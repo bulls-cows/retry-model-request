@@ -144,3 +144,7 @@ vite.config.ts.timestamp-*
 .cursor/
 .workbuddy/
 .idea/
+
+# Tauri
+src-tauri/gen/
+src-tauri/target/
