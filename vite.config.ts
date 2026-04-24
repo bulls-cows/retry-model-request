@@ -25,5 +25,7 @@ export default defineConfig({
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     // Produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_DEBUG,
+    // Clear output directory before each build
+    emptyOutDir: true,
   },
 })
