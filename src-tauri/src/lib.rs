@@ -1,4 +1,4 @@
-//! Library module for Retry Model Request
+//! Library module for AIProxy
 
 pub mod commands;
 pub mod config;

@@ -1,12 +1,12 @@
 [package]
-name = "retry-model-request"
+name = "ai-proxy"
 version = "1.0.0"
-description = "AI Model Request Proxy with Auto-Retry"
+description = "AIProxy - AI Model Request Proxy with Auto-Retry"
 authors = ["you"]
 edition = "2021"
 
 [lib]
-name = "retry_model_request_lib"
+name = "ai_proxy_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]

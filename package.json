@@ -1,7 +1,7 @@
 {
-  "name": "retry-model-request",
+  "name": "ai-proxy",
   "version": "1.0.0",
-  "description": "AI Model Request Proxy with Auto-Retry - Desktop Application",
+  "description": "AIProxy - AI Model Request Proxy with Auto-Retry",
   "type": "module",
   "scripts": {
     "ready": "npm install",

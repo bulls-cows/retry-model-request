@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Retry Model Request",
+  "productName": "AIProxy",
   "version": "1.0.0",
-  "identifier": "com.retry-model-request.app",
+  "identifier": "com.verysites.ai-proxy.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Retry Model Request",
+        "title": "AIProxy",
         "width": 1000,
         "height": 700,
         "minWidth": 800,
