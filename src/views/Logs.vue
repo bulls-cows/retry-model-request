@@ -14,12 +14,21 @@
           v-for="(log, index) in filteredLogs"
           :key="index"
           :class="['log-entry', `log-${log.level.toLowerCase()}`]"
+          @click="toggleExpand(index)"
         >
-          <span class="log-time">{{ formatTime(log.timestamp) }}</span>
-          <Tag :type="getTagType(log.level)">
-            {{ log.level }}
-          </Tag>
-          <span class="log-message">{{ log.message }}</span>
+          <div class="log-header">
+            <span class="log-time">{{ formatTime(log.timestamp) }}</span>
+            <Tag :type="getTagType(log.level)">
+              {{ log.level }}
+            </Tag>
+            <span class="log-message">{{ log.message }}</span>
+            <span class="log-expand-icon">
+              {{ expandedLogs.includes(index) ? '▼' : '▶' }}
+            </span>
+          </div>
+          <div v-if="expandedLogs.includes(index) && log.details" class="log-details">
+            <pre class="log-details-content">{{ formatDetails(log.details) }}</pre>
+          </div>
         </div>
         <div v-if="filteredLogs.length === 0" class="log-empty">暂无日志</div>
       </div>
@@ -38,6 +47,7 @@ import { useProxyStore } from '@/stores/proxy'
 const proxyStore = useProxyStore()
 const logContainer = ref<HTMLElement | null>(null)
 const levelFilter = ref('ALL')
+const expandedLogs = ref<number[]>([])
 
 const levelOptions = [
   { label: '全部', value: 'ALL' },
@@ -73,8 +83,22 @@ function getTagType(
   return map[level] || 'default'
 }
 
+function formatDetails(details: Record<string, unknown>): string {
+  return JSON.stringify(details, null, 2)
+}
+
+function toggleExpand(index: number) {
+  const idx = expandedLogs.value.indexOf(index)
+  if (idx === -1) {
+    expandedLogs.value.push(index)
+  } else {
+    expandedLogs.value.splice(idx, 1)
+  }
+}
+
 function handleClear() {
   proxyStore.clearLogs()
+  expandedLogs.value = []
 }
 
 function scrollToBottom() {
@@ -146,16 +170,22 @@ onMounted(() => {
 
 .log-entry {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  flex-direction: column;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   margin-bottom: 4px;
   background: var(--bg-secondary);
+  cursor: pointer;
 
   &:hover {
     background: var(--bg-tertiary);
   }
+}
+
+.log-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .log-time {
@@ -168,6 +198,29 @@ onMounted(() => {
   flex: 1;
   color: var(--text-primary);
   word-break: break-all;
+}
+
+.log-expand-icon {
+  color: var(--text-tertiary);
+  font-size: var(--font-xs);
+}
+
+.log-details {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+}
+
+.log-details-content {
+  margin: 0;
+  padding: 0;
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-x: auto;
 }
 
 .log-info {

@@ -17,7 +17,6 @@ pub async fn proxy_handler(
     State(state): State<std::sync::Arc<ProxyState>>,
     request: Request,
 ) -> Response {
-    let method = request.method().clone();
     let uri = request.uri().clone();
     let path = uri.path();
 
@@ -27,28 +26,11 @@ pub async fn proxy_handler(
     // Check if streaming request
     let is_streaming = is_streaming_request(&request);
 
-    // Log incoming request
-    let _ = state.log_sender.send(LogEntry {
-        timestamp: chrono::Local::now().to_rfc3339(),
-        level: "INFO".to_string(),
-        message: format!("{} {}", method, path),
-        details: Some(serde_json::json!({
-            "target": target_url,
-            "streaming": is_streaming,
-        })),
-    });
-
-    // Create HTTP client
-    let client = Client::builder()
-        .timeout(Duration::from_secs(120))
-        .build()
-        .unwrap();
-
     // Handle streaming vs regular requests
     if is_streaming {
-        handle_streaming_request(state, client, request, target_url).await
+        handle_streaming_request(state, request, target_url).await
     } else {
-        handle_regular_request(state, client, request, target_url).await
+        handle_regular_request(state, request, target_url).await
     }
 }
 
@@ -66,17 +48,46 @@ fn is_streaming_request(request: &Request) -> bool {
     false
 }
 
+/// Truncate string to max length
+fn truncate_string(s: &str, max_len: usize) -> String {
+    if s.len() > max_len {
+        format!("{}... (truncated, {} bytes total)", &s[..max_len], s.len())
+    } else {
+        s.to_string()
+    }
+}
+
+/// Format bytes as string, handling JSON specially
+fn format_body(bytes: &[u8], max_len: usize) -> String {
+    let s = String::from_utf8_lossy(bytes);
+    // Try to parse as JSON and pretty print
+    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&s) {
+        let pretty = serde_json::to_string_pretty(&json).unwrap_or_else(|_| s.to_string());
+        truncate_string(&pretty, max_len)
+    } else {
+        truncate_string(&s, max_len)
+    }
+}
+
 /// Handle regular (non-streaming) request with retry
 async fn handle_regular_request(
     state: std::sync::Arc<ProxyState>,
-    client: Client,
     request: Request,
     target_url: String,
 ) -> Response {
+    let method = request.method().clone();
+    let path = request.uri().path().to_string();
     let (parts, body) = request.into_parts();
+
     let body_bytes = match axum::body::to_bytes(body, 100 * 1024 * 1024).await {
         Ok(b) => b,
         Err(e) => {
+            let _ = state.log_sender.send(LogEntry {
+                timestamp: chrono::Local::now().to_rfc3339(),
+                level: "ERROR".to_string(),
+                message: format!("Failed to read request body: {}", e),
+                details: None,
+            });
             return (
                 StatusCode::BAD_REQUEST,
                 format!("Failed to read body: {}", e),
@@ -85,8 +96,40 @@ async fn handle_regular_request(
         }
     };
 
+    // Extract request headers
+    let req_headers: serde_json::Map<String, serde_json::Value> = parts
+        .headers
+        .iter()
+        .filter_map(|(k, v)| {
+            v.to_str()
+                .ok()
+                .map(|s| (k.to_string(), serde_json::Value::String(s.to_string())))
+        })
+        .collect();
+
+    // Log incoming request with details
+    let _ = state.log_sender.send(LogEntry {
+        timestamp: chrono::Local::now().to_rfc3339(),
+        level: "INFO".to_string(),
+        message: format!(">>> {} {}", method, path),
+        details: Some(serde_json::json!({
+            "type": "request",
+            "method": method.to_string(),
+            "path": path,
+            "target": target_url,
+            "headers": req_headers,
+            "body": format_body(&body_bytes, 2000),
+        })),
+    });
+
     let mut attempt = 0;
     let max_retries = state.profile.max_retries;
+
+    // Create HTTP client
+    let client = Client::builder()
+        .timeout(Duration::from_secs(120))
+        .build()
+        .unwrap();
 
     loop {
         // Build request
@@ -126,7 +169,12 @@ async fn handle_regular_request(
                             "Retry {}/{}: {} {}",
                             attempt, max_retries, status, target_url
                         ),
-                        details: None,
+                        details: Some(serde_json::json!({
+                            "type": "retry",
+                            "attempt": attempt,
+                            "max_retries": max_retries,
+                            "status": status.as_u16(),
+                        })),
                     });
 
                     // Update stats
@@ -136,22 +184,36 @@ async fn handle_regular_request(
                     continue;
                 }
 
+                // Extract response headers
+                let resp_headers: serde_json::Map<String, serde_json::Value> = response
+                    .headers()
+                    .iter()
+                    .filter_map(|(k, v)| {
+                        v.to_str()
+                            .ok()
+                            .map(|s| (k.to_string(), serde_json::Value::String(s.to_string())))
+                    })
+                    .collect();
+
                 // Forward response
                 let mut response_builder = Response::builder().status(status);
                 for (name, value) in response.headers() {
                     response_builder = response_builder.header(name, value);
                 }
 
-                let body_bytes = response.bytes().await.unwrap_or_default();
+                let resp_body = response.bytes().await.unwrap_or_default();
 
-                // Log success
+                // Log response with details
                 let _ = state.log_sender.send(LogEntry {
                     timestamp: chrono::Local::now().to_rfc3339(),
-                    level: "INFO".to_string(),
-                    message: format!("Response: {} {}", status, target_url),
+                    level: if status.is_success() { "INFO" } else { "WARN" }.to_string(),
+                    message: format!("<<< {} {} (attempt {})", status, path, attempt + 1),
                     details: Some(serde_json::json!({
+                        "type": "response",
                         "status": status.as_u16(),
-                        "size": body_bytes.len(),
+                        "headers": resp_headers,
+                        "body": format_body(&resp_body, 2000),
+                        "size": resp_body.len(),
                         "attempt": attempt + 1,
                     })),
                 });
@@ -160,7 +222,7 @@ async fn handle_regular_request(
                 state.stats.record_success();
 
                 return response_builder
-                    .body(Body::from(body_bytes))
+                    .body(Body::from(resp_body))
                     .unwrap()
                     .into_response();
             }
@@ -173,7 +235,12 @@ async fn handle_regular_request(
                         timestamp: chrono::Local::now().to_rfc3339(),
                         level: "WARN".to_string(),
                         message: format!("Retry {}/{}: {}", attempt, max_retries, e),
-                        details: None,
+                        details: Some(serde_json::json!({
+                            "type": "retry_error",
+                            "attempt": attempt,
+                            "max_retries": max_retries,
+                            "error": e.to_string(),
+                        })),
                     });
 
                     state.stats.record_retry();
@@ -185,8 +252,12 @@ async fn handle_regular_request(
                 let _ = state.log_sender.send(LogEntry {
                     timestamp: chrono::Local::now().to_rfc3339(),
                     level: "ERROR".to_string(),
-                    message: format!("Request failed: {}", e),
-                    details: None,
+                    message: format!("<<< Request failed: {}", e),
+                    details: Some(serde_json::json!({
+                        "type": "error",
+                        "error": e.to_string(),
+                        "attempt": attempt + 1,
+                    })),
                 });
 
                 state.stats.record_failure();
@@ -200,14 +271,22 @@ async fn handle_regular_request(
 /// Handle streaming (SSE) request
 async fn handle_streaming_request(
     state: std::sync::Arc<ProxyState>,
-    client: Client,
     request: Request,
     target_url: String,
 ) -> Response {
+    let method = request.method().clone();
+    let path = request.uri().path().to_string();
     let (parts, body) = request.into_parts();
+
     let body_bytes = match axum::body::to_bytes(body, 100 * 1024 * 1024).await {
         Ok(b) => b,
         Err(e) => {
+            let _ = state.log_sender.send(LogEntry {
+                timestamp: chrono::Local::now().to_rfc3339(),
+                level: "ERROR".to_string(),
+                message: format!("Failed to read request body: {}", e),
+                details: None,
+            });
             return (
                 StatusCode::BAD_REQUEST,
                 format!("Failed to read body: {}", e),
@@ -215,6 +294,38 @@ async fn handle_streaming_request(
                 .into_response();
         }
     };
+
+    // Extract request headers
+    let req_headers: serde_json::Map<String, serde_json::Value> = parts
+        .headers
+        .iter()
+        .filter_map(|(k, v)| {
+            v.to_str()
+                .ok()
+                .map(|s| (k.to_string(), serde_json::Value::String(s.to_string())))
+        })
+        .collect();
+
+    // Log incoming streaming request
+    let _ = state.log_sender.send(LogEntry {
+        timestamp: chrono::Local::now().to_rfc3339(),
+        level: "INFO".to_string(),
+        message: format!(">>> {} {} [STREAMING]", method, path),
+        details: Some(serde_json::json!({
+            "type": "request",
+            "method": method.to_string(),
+            "path": path,
+            "target": target_url,
+            "headers": req_headers,
+            "body": format_body(&body_bytes, 2000),
+        })),
+    });
+
+    // Create HTTP client
+    let client = Client::builder()
+        .timeout(Duration::from_secs(120))
+        .build()
+        .unwrap();
 
     // Build request
     let mut req_builder = client.request(
@@ -240,6 +351,18 @@ async fn handle_streaming_request(
     match req_builder.send().await {
         Ok(response) => {
             let status = response.status();
+
+            // Log streaming response start
+            let _ = state.log_sender.send(LogEntry {
+                timestamp: chrono::Local::now().to_rfc3339(),
+                level: "INFO".to_string(),
+                message: format!("<<< {} {} [STREAMING STARTED]", status, path),
+                details: Some(serde_json::json!({
+                    "type": "streaming_start",
+                    "status": status.as_u16(),
+                })),
+            });
+
             let response_builder = Response::builder()
                 .status(status)
                 .header("content-type", "text/event-stream")
@@ -264,7 +387,10 @@ async fn handle_streaming_request(
                 timestamp: chrono::Local::now().to_rfc3339(),
                 level: "ERROR".to_string(),
                 message: format!("Streaming request failed: {}", e),
-                details: None,
+                details: Some(serde_json::json!({
+                    "type": "error",
+                    "error": e.to_string(),
+                })),
             });
 
             state.stats.record_failure();
